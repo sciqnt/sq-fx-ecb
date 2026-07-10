@@ -45,6 +45,19 @@ class TestECBProvider(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="sq-fx-ecb-test-")
         self.provider = ECBProvider(cache_dir=Path(self.tmp), fetch=_fake_fetch)
 
+    # ── declared coverage ──────────────────────────────────────────────
+    def test_currencies_declares_coverage_including_eur_base(self):
+        ccys = self.provider.currencies()
+        self.assertIn("EUR", ccys)               # the base rates quote against
+        for code in ("USD", "GBP", "JPY", "CHF", "ZAR"):
+            self.assertIn(code, ccys)
+        # the declared set must be a SUPERSET of whatever a real ECB file
+        # actually quotes — anything the parser finds must be convertible.
+        from sq_fx_ecb.parser import parse_ecb_xml
+        parsed = parse_ecb_xml(_DAILY)
+        quoted = set().union(*parsed.values()) if parsed else set()
+        self.assertTrue(quoted <= ccys, f"unadvertised quoted codes: {quoted - ccys}")
+
     # ── identity short-circuit ─────────────────────────────────────────
     def test_same_currency_returns_rate_one(self):
         r = self.provider.get_rate("EUR", "EUR")
