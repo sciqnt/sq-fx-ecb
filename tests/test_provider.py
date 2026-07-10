@@ -46,17 +46,32 @@ class TestECBProvider(unittest.TestCase):
         self.provider = ECBProvider(cache_dir=Path(self.tmp), fetch=_fake_fetch)
 
     # ── declared coverage ──────────────────────────────────────────────
-    def test_currencies_declares_coverage_including_eur_base(self):
+    def test_currencies_pins_the_ecb_basket(self):
+        # Pin the exact declared basket (EUR base + ECB's 30 reference
+        # currencies). This is the drift guard: if ECB adds/removes a code we
+        # must consciously update the constant AND this count, rather than the
+        # test silently tracking whatever the (5-code) fixture happens to hold.
         ccys = self.provider.currencies()
-        self.assertIn("EUR", ccys)               # the base rates quote against
-        for code in ("USD", "GBP", "JPY", "CHF", "ZAR"):
-            self.assertIn(code, ccys)
-        # the declared set must be a SUPERSET of whatever a real ECB file
-        # actually quotes — anything the parser finds must be convertible.
+        self.assertEqual(len(ccys), 31)
+        self.assertEqual(ccys, {
+            "EUR", "USD", "JPY", "BGN", "CZK", "DKK", "GBP", "HUF", "PLN", "RON",
+            "SEK", "CHF", "ISK", "NOK", "TRY", "AUD", "BRL", "CAD", "CNY", "HKD",
+            "IDR", "ILS", "INR", "KRW", "MXN", "MYR", "NZD", "PHP", "SGD", "THB",
+            "ZAR",
+        })
+        # and it must remain a SUPERSET of whatever a real ECB file quotes.
         from sq_fx_ecb.parser import parse_ecb_xml
         parsed = parse_ecb_xml(_DAILY)
         quoted = set().union(*parsed.values()) if parsed else set()
         self.assertTrue(quoted <= ccys, f"unadvertised quoted codes: {quoted - ccys}")
+
+    def test_satisfies_supports_currencies_protocol(self):
+        # structurally conforms to the optional capability protocol
+        try:
+            from sq_schema import SupportsCurrencies
+        except ImportError:
+            self.skipTest("sq_schema predates SupportsCurrencies")
+        self.assertIsInstance(self.provider, SupportsCurrencies)
 
     # ── identity short-circuit ─────────────────────────────────────────
     def test_same_currency_returns_rate_one(self):

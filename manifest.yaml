@@ -15,6 +15,7 @@ flavours:
 capabilities:
   read:
     - get_fx_rate             # implements sq_schema.FxRateProvider
+    - list_currencies         # declared coverage (sq_schema.SupportsCurrencies; static, no fetch)
   execute: []                 # none
 known_quirks: FINDINGS.md
 license: MIT
