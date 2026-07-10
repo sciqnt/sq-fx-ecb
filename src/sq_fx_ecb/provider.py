@@ -41,6 +41,25 @@ class ECBProvider:
     testability — production code uses the XDG default cache + urllib.
     """
 
+    # The currencies ECB publishes daily reference rates for, plus EUR (the
+    # base every rate is quoted against). This is the provider's DECLARED
+    # coverage — the set it can convert into — surfaced via `currencies()` so
+    # `sq_fx` can offer an honest "display in" list without a network round-
+    # trip. Static because ECB's reference basket is stable and documented;
+    # add a code here if ECB adds one to eurofxref-daily.xml.
+    SUPPORTED_CURRENCIES = frozenset({
+        "EUR", "USD", "JPY", "BGN", "CZK", "DKK", "GBP", "HUF", "PLN", "RON",
+        "SEK", "CHF", "ISK", "NOK", "TRY", "AUD", "BRL", "CAD", "CNY", "HKD",
+        "IDR", "ILS", "INR", "KRW", "MXN", "MYR", "NZD", "PHP", "SGD", "THB",
+        "ZAR",
+    })
+
+    def currencies(self) -> set[str]:
+        """The currencies this provider can convert into (its declared
+        coverage). Static — no fetch — so it's cheap to call for a settings
+        picker or a `--json` capability dump."""
+        return set(self.SUPPORTED_CURRENCIES)
+
     def __init__(
         self,
         *,
